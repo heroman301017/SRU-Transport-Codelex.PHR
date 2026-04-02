@@ -21,6 +21,7 @@ interface ScheduleItem {
   matchTime: string;
   departTime: string;
   passengers: number;
+  staffCount?: number;
   assignedVehicles: string[];
   notes: string;
 }
@@ -47,25 +48,25 @@ const VEHICLES: Vehicle[] = [
 // หมายเหตุ: ข้อมูลการแข่งขันหลัก (รอบฝึกซ้อมสามารถเพิ่มได้เองผ่านระบบ)
 const INITIAL_SCHEDULE: ScheduleItem[] = [
   // 6 เม.ย. 69
-  { id: '1', date: '2026-04-06', sport: 'วอลเลย์บอล (ญ/ช)', venue: 'โรงยิม 1', matchTime: '10:00 / 11:00', departTime: '08:00', passengers: 19, assignedVehicles: ['van1', 'van2'], notes: 'ช 9 + ญ 10 คน' },
-  { id: '2', date: '2026-04-06', sport: 'แชร์บอล (ญ)', venue: 'โรงยิมฟุตซอล', matchTime: '14:00', departTime: '12:00', passengers: 18, assignedVehicles: ['van3', 'van4'], notes: 'ญ 18 คน' },
-  { id: '3', date: '2026-04-06', sport: 'พิธีเปิด + ฟุตบอล (ช) + กรีฑา', venue: 'สนามกีฬากลาง', matchTime: '15:00 / 17:30', departTime: '13:00', passengers: 50, assignedVehicles: ['bus1'], notes: 'ฟุตบอล SRU vs สงขลา | กรีฑา 100m, 4x100m' },
-  { id: '4', date: '2026-04-06', sport: 'บาสเกตบอล 3x3 (ญ/ช)', venue: 'โรงยิม 1', matchTime: '18:20 / 19:00', departTime: '16:20', passengers: 13, assignedVehicles: ['van5', 'van1'], notes: 'ช 6 + ญ 7 คน' },
+  { id: '1', date: '2026-04-06', sport: 'วอลเลย์บอล (ญ/ช)', venue: 'โรงยิม 1', matchTime: '10:00 / 11:00', departTime: '08:00', passengers: 19, staffCount: 3, assignedVehicles: ['van1', 'van2'], notes: 'ช 9 + ญ 10 คน' },
+  { id: '2', date: '2026-04-06', sport: 'แชร์บอล (ญ)', venue: 'โรงยิมฟุตซอล', matchTime: '14:00', departTime: '12:00', passengers: 18, staffCount: 3, assignedVehicles: ['van3', 'van4'], notes: 'ญ 18 คน' },
+  { id: '3', date: '2026-04-06', sport: 'พิธีเปิด + ฟุตบอล (ช) + กรีฑา', venue: 'สนามกีฬากลาง', matchTime: '15:00 / 17:30', departTime: '13:00', passengers: 50, staffCount: 6, assignedVehicles: ['bus1'], notes: 'ฟุตบอล SRU vs สงขลา | กรีฑา 100m, 4x100m' },
+  { id: '4', date: '2026-04-06', sport: 'บาสเกตบอล 3x3 (ญ/ช)', venue: 'โรงยิม 1', matchTime: '18:20 / 19:00', departTime: '16:20', passengers: 13, staffCount: 3, assignedVehicles: ['van5', 'van1'], notes: 'ช 6 + ญ 7 คน' },
   
   // 7 เม.ย. 69
-  { id: '5', date: '2026-04-07', sport: 'ฟุตบอล (ช) - สาย A นัดที่ 2', venue: 'สนามกีฬากลาง', matchTime: '16:30', departTime: '14:30', passengers: 20, assignedVehicles: ['van2', 'van3'], notes: 'มรภ.ภูเก็ต vs ผู้ชนะคู่ที่ 1' },
-  { id: '6', date: '2026-04-07', sport: 'งานเลี้ยงรับรอง', venue: 'ข้างหอประชุมใหญ่', matchTime: '18:00', departTime: '16:30', passengers: 40, assignedVehicles: ['bus1'], notes: 'ผู้บริหารและตัวแทนนักกีฬา' },
+  { id: '5', date: '2026-04-07', sport: 'ฟุตบอล (ช) - สาย A นัดที่ 2', venue: 'สนามกีฬากลาง', matchTime: '16:30', departTime: '14:30', passengers: 20, staffCount: 3, assignedVehicles: ['van2', 'van3'], notes: 'มรภ.ภูเก็ต vs ผู้ชนะคู่ที่ 1' },
+  { id: '6', date: '2026-04-07', sport: 'งานเลี้ยงรับรอง', venue: 'ข้างหอประชุมใหญ่', matchTime: '18:00', departTime: '16:30', passengers: 40, staffCount: 0, assignedVehicles: ['bus1'], notes: 'ผู้บริหารและตัวแทนนักกีฬา' },
 
   // 8 เม.ย. 69
-  { id: '7', date: '2026-04-08', sport: 'ฟุตบอล (ช) - สาย A นัดที่ 2', venue: 'สนามกีฬากลาง', matchTime: '18:00', departTime: '16:00', passengers: 20, assignedVehicles: ['bus1'], notes: 'ผู้แพ้คู่ที่ 1 vs มรภ.ภูเก็ต' },
-  { id: '8', date: '2026-04-08', sport: 'กรีฑา', venue: 'สนามกีฬากลาง', matchTime: '19:00', departTime: '17:00', passengers: 20, assignedVehicles: ['van4', 'van5'], notes: 'วิ่ง 200m, ผลัดต่างระยะ' },
+  { id: '7', date: '2026-04-08', sport: 'ฟุตบอล (ช) - สาย A นัดที่ 2', venue: 'สนามกีฬากลาง', matchTime: '18:00', departTime: '16:00', passengers: 20, staffCount: 3, assignedVehicles: ['bus1'], notes: 'ผู้แพ้คู่ที่ 1 vs มรภ.ภูเก็ต' },
+  { id: '8', date: '2026-04-08', sport: 'กรีฑา', venue: 'สนามกีฬากลาง', matchTime: '19:00', departTime: '17:00', passengers: 20, staffCount: 3, assignedVehicles: ['van4', 'van5'], notes: 'วิ่ง 200m, ผลัดต่างระยะ' },
 
   // 9 เม.ย. 69
-  { id: '9', date: '2026-04-09', sport: 'ฟุตบอล (ช) - รอบรองชนะเลิศ', venue: 'สนามกีฬากลาง', matchTime: '17:30 / 19:00', departTime: '15:30', passengers: 20, assignedVehicles: ['bus1'], notes: 'ที่ 1 สาย A vs ที่ 2 สาย B' },
-  { id: '10', date: '2026-04-09', sport: 'กรีฑา', venue: 'สนามกีฬากลาง', matchTime: '18:00 - 19:30', departTime: '16:00', passengers: 20, assignedVehicles: ['van1', 'van2'], notes: 'วิ่งผลัด 5x80m, ผลัดผสม 4x100m' },
+  { id: '9', date: '2026-04-09', sport: 'ฟุตบอล (ช) - รอบรองชนะเลิศ', venue: 'สนามกีฬากลาง', matchTime: '17:30 / 19:00', departTime: '15:30', passengers: 20, staffCount: 3, assignedVehicles: ['bus1'], notes: 'ที่ 1 สาย A vs ที่ 2 สาย B' },
+  { id: '10', date: '2026-04-09', sport: 'กรีฑา', venue: 'สนามกีฬากลาง', matchTime: '18:00 - 19:30', departTime: '16:00', passengers: 20, staffCount: 3, assignedVehicles: ['van1', 'van2'], notes: 'วิ่งผลัด 5x80m, ผลัดผสม 4x100m' },
 
   // 10 เม.ย. 69
-  { id: '11', date: '2026-04-10', sport: 'ฟุตบอล (ช) - รอบชิงชนะเลิศ', venue: 'สนามกีฬากลาง', matchTime: '17:30 / 19:00', departTime: '15:30', passengers: 20, assignedVehicles: ['bus1'], notes: 'ชิงอันดับ 3 (17.30) | ชิงชนะเลิศ (19.00)' },
+  { id: '11', date: '2026-04-10', sport: 'ฟุตบอล (ช) - รอบชิงชนะเลิศ', venue: 'สนามกีฬากลาง', matchTime: '17:30 / 19:00', departTime: '15:30', passengers: 20, staffCount: 3, assignedVehicles: ['bus1'], notes: 'ชิงอันดับ 3 (17.30) | ชิงชนะเลิศ (19.00)' },
 ];
 
 const DATES = ['2026-04-06', '2026-04-07', '2026-04-08', '2026-04-09', '2026-04-10'];
@@ -188,6 +189,7 @@ export default function App() {
       matchTime: newTrip.matchTime,
       departTime: newTrip.departTime,
       passengers: newTrip.passengers,
+      staffCount: 3,
       assignedVehicles: [],
       notes: newTrip.notes
     };
@@ -279,6 +281,13 @@ export default function App() {
   const updatePassengers = (scheduleId: string, count: number) => {
     setSchedules(prev => prev.map(s => 
       s.id === scheduleId ? { ...s, passengers: count } : s
+    ));
+  };
+
+  // Handle staff count change
+  const updateStaffCount = (scheduleId: string, count: number) => {
+    setSchedules(prev => prev.map(s => 
+      s.id === scheduleId ? { ...s, staffCount: count } : s
     ));
   };
 
@@ -541,8 +550,10 @@ export default function App() {
                         return sum + (v ? v.capacity : 0);
                       }, 0);
                       
-                      const isOverCapacity = schedule.passengers > currentCapacity;
-                      const seatsRemaining = currentCapacity - schedule.passengers;
+                      const staffCount = schedule.staffCount || 0;
+                      const totalPassengers = schedule.passengers + staffCount;
+                      const isOverCapacity = totalPassengers > currentCapacity;
+                      const seatsRemaining = currentCapacity - totalPassengers;
 
                       return (
                         <tr key={schedule.id} className="hover:bg-slate-50 transition-colors print:hover:bg-white">
@@ -559,18 +570,38 @@ export default function App() {
                             {schedule.notes && <p className="text-xs text-blue-500 mt-1 bg-blue-50 inline-block px-2 py-0.5 rounded print:bg-transparent print:p-0 print:text-slate-600">หมายเหตุ: {schedule.notes}</p>}
                           </td>
                           <td className="p-4 align-top print:border-r print:border-slate-800">
-                            <div className="flex items-center gap-2">
-                              {/* Interactive Input for Web */}
-                              <input 
-                                type="number" 
-                                min="1"
-                                value={schedule.passengers}
-                                onChange={(e) => updatePassengers(schedule.id, parseInt(e.target.value) || 0)}
-                                className="w-16 p-1.5 border border-slate-300 rounded text-center text-sm focus:ring-2 focus:ring-blue-500 outline-none print:hidden"
-                              />
-                              {/* Static Text for Print */}
-                              <span className="hidden print:inline font-bold">{schedule.passengers}</span>
-                              <span className="text-sm text-slate-500 print:text-black">คน</span>
+                            <div className="flex flex-col gap-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-slate-500 w-12">นักกีฬา:</span>
+                                {/* Interactive Input for Web */}
+                                <input 
+                                  type="number" 
+                                  min="1"
+                                  value={schedule.passengers}
+                                  onChange={(e) => updatePassengers(schedule.id, parseInt(e.target.value) || 0)}
+                                  className="w-16 p-1 border border-slate-300 rounded text-center text-sm focus:ring-2 focus:ring-blue-500 outline-none print:hidden"
+                                />
+                                {/* Static Text for Print */}
+                                <span className="hidden print:inline font-bold">{schedule.passengers}</span>
+                                <span className="text-xs text-slate-500 print:text-black">คน</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-slate-500 w-12">จนท.:</span>
+                                {/* Interactive Input for Web */}
+                                <input 
+                                  type="number" 
+                                  min="0"
+                                  value={staffCount}
+                                  onChange={(e) => updateStaffCount(schedule.id, parseInt(e.target.value) || 0)}
+                                  className="w-16 p-1 border border-slate-300 rounded text-center text-sm focus:ring-2 focus:ring-blue-500 outline-none print:hidden"
+                                />
+                                {/* Static Text for Print */}
+                                <span className="hidden print:inline font-bold">{staffCount}</span>
+                                <span className="text-xs text-slate-500 print:text-black">คน</span>
+                              </div>
+                              <div className="text-sm font-bold text-slate-700 mt-1 pt-1 border-t border-slate-200">
+                                รวม: {totalPassengers} คน
+                              </div>
                             </div>
                           </td>
                           <td className="p-4 align-top">
@@ -585,7 +616,7 @@ export default function App() {
                                 </div>
                                 <div className="text-xs">
                                   {isOverCapacity 
-                                    ? `ขาดอีก ${schedule.passengers - currentCapacity} ที่นั่ง` 
+                                    ? `ขาดอีก ${totalPassengers - currentCapacity} ที่นั่ง` 
                                     : `ว่าง ${seatsRemaining} ที่นั่ง`}
                                 </div>
                               </div>
