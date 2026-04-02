@@ -134,6 +134,16 @@ export default function App() {
   const [adminPassword, setAdminPassword] = useState('');
   const [adminError, setAdminError] = useState('');
 
+  const handleResetData = () => {
+    if (window.confirm('คุณต้องการรีเซ็ตข้อมูลทั้งหมดกลับเป็นค่าเริ่มต้นหรือไม่? ข้อมูลที่แก้ไขไว้จะหายไปทั้งหมด')) {
+      setSchedules(INITIAL_SCHEDULE);
+      setMatches(INITIAL_MATCHES);
+      localStorage.removeItem('sru-schedules');
+      localStorage.removeItem('sru-matches');
+      alert('รีเซ็ตข้อมูลเรียบร้อยแล้ว');
+    }
+  };
+
   // Share State
   const [showShareModal, setShowShareModal] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -344,12 +354,21 @@ export default function App() {
                   แชร์
                 </button>
                 {isAdmin ? (
-                  <button 
-                    onClick={() => setIsAdmin(false)}
-                    className="px-4 py-2 bg-red-600/20 text-red-100 hover:bg-red-600/40 rounded-md text-sm font-medium transition-colors"
-                  >
-                    ออกจากระบบ Admin
-                  </button>
+                  <>
+                    <button 
+                      onClick={handleResetData}
+                      className="px-4 py-2 bg-orange-500/20 text-orange-100 hover:bg-orange-500/40 rounded-md text-sm font-medium transition-colors"
+                      title="รีเซ็ตข้อมูลทั้งหมดกลับเป็นค่าเริ่มต้น"
+                    >
+                      รีเซ็ตข้อมูล
+                    </button>
+                    <button 
+                      onClick={() => setIsAdmin(false)}
+                      className="px-4 py-2 bg-red-600/20 text-red-100 hover:bg-red-600/40 rounded-md text-sm font-medium transition-colors"
+                    >
+                      ออกจากระบบ Admin
+                    </button>
+                  </>
                 ) : (
                   <button 
                     onClick={() => setShowAdminLogin(true)}
