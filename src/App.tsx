@@ -101,17 +101,21 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'transport' | 'matches' | 'overview'>('transport');
   
   const [schedules, setSchedules] = useState<ScheduleItem[]>(() => {
-    const saved = localStorage.getItem('sru-schedules');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) { console.error(e); }
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('sru-schedules');
+      if (saved) {
+        try { return JSON.parse(saved); } catch (e) { console.error(e); }
+      }
     }
     return INITIAL_SCHEDULE;
   });
 
   const [matches, setMatches] = useState<MatchItem[]>(() => {
-    const saved = localStorage.getItem('sru-matches');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) { console.error(e); }
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('sru-matches');
+      if (saved) {
+        try { return JSON.parse(saved); } catch (e) { console.error(e); }
+      }
     }
     return INITIAL_MATCHES;
   });
@@ -126,12 +130,18 @@ export default function App() {
 
   // Overlap Deduplication State
   const [overlapAthletes, setOverlapAthletes] = useState<number>(() => {
-    const saved = localStorage.getItem('sru-overlap-athletes');
-    return saved ? parseInt(saved, 10) : 0;
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('sru-overlap-athletes');
+      return saved ? parseInt(saved, 10) : 0;
+    }
+    return 0;
   });
   const [overlapStaff, setOverlapStaff] = useState<number>(() => {
-    const saved = localStorage.getItem('sru-overlap-staff');
-    return saved ? parseInt(saved, 10) : 0;
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('sru-overlap-staff');
+      return saved ? parseInt(saved, 10) : 0;
+    }
+    return 0;
   });
 
   useEffect(() => {
@@ -1206,7 +1216,7 @@ export default function App() {
 
       {/* --- SHARE MODAL --- */}
       {showShareModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 print:hidden">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 print:hidden">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden">
             <div className="flex justify-between items-center p-4 border-b border-slate-200 bg-slate-50">
               <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">
@@ -1253,7 +1263,7 @@ export default function App() {
 
       {/* --- ADMIN LOGIN MODAL --- */}
       {showAdminLogin && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 print:hidden">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 print:hidden">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden">
             <div className="flex justify-between items-center p-4 border-b border-slate-200 bg-slate-50">
               <h3 className="font-bold text-lg text-slate-800">เข้าสู่ระบบ Admin</h3>
@@ -1286,7 +1296,7 @@ export default function App() {
 
       {/* --- MATCH FORM MODAL --- */}
       {showMatchForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 print:hidden">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 print:hidden">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
             <div className="flex justify-between items-center p-4 border-b border-slate-200 bg-slate-50">
               <h3 className="font-bold text-lg text-slate-800">
@@ -1365,7 +1375,7 @@ export default function App() {
 
       {/* --- ADD TRIP MODAL --- */}
       {showAddForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 print:hidden">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 print:hidden">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
             <div className="flex justify-between items-center p-4 border-b border-slate-200 bg-slate-50">
               <h3 className="font-bold text-lg text-slate-800">เพิ่มเที่ยววิ่ง (ฝึกซ้อม/อื่นๆ)</h3>
