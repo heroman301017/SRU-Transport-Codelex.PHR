@@ -220,7 +220,7 @@ export default function App() {
   // Share State
   const [showShareModal, setShowShareModal] = useState(false);
   const [copied, setCopied] = useState(false);
-  const shareUrl = "https://ais-pre-4tumkywh7olo6imxnmz27w-49481016620.asia-southeast1.run.app";
+  const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(shareUrl);
@@ -506,7 +506,7 @@ export default function App() {
       {/* --- NORMAL DASHBOARD VIEW (Hidden when printing Job Sheets) --- */}
       <div className={printMode === 'jobs' ? 'hidden' : 'block'}>
         {/* Header */}
-        <header className="bg-blue-900 text-white p-6 shadow-md print:bg-white print:text-black print:shadow-none print:p-0 print:mb-6">
+        <header className="bg-blue-900 text-white p-4 md:p-6 shadow-md print:bg-white print:text-black print:shadow-none print:p-0 print:mb-6">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
               <h1 className="text-2xl font-bold flex items-center gap-2 print:text-black">
@@ -516,14 +516,14 @@ export default function App() {
               <p className="text-blue-200 text-sm mt-1 print:text-slate-600">ระบบจัดการรถรับ-ส่งนักกีฬา (อัปเดตความจุผู้โดยสาร)</p>
             </div>
             
-            <div className="flex items-center gap-4 print:hidden">
+            <div className="flex flex-wrap items-center gap-4 print:hidden mt-4 md:mt-0">
               {/* Date Selector */}
-              <div className="flex bg-blue-800 rounded-lg p-1">
+              <div className="flex overflow-x-auto hide-scrollbar bg-blue-800 rounded-lg p-1 max-w-full">
                 {DATES.map(date => (
                   <button
                     key={date}
                     onClick={() => setSelectedDate(date)}
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
                       selectedDate === date 
                         ? 'bg-white text-blue-900 shadow-sm' 
                         : 'text-blue-100 hover:bg-blue-700'
@@ -535,7 +535,7 @@ export default function App() {
               </div>
 
               {/* Admin Login & Share */}
-              <div className="print:hidden flex items-center gap-2">
+              <div className="print:hidden flex flex-wrap items-center gap-2">
                 <button 
                   onClick={() => setShowShareModal(true)}
                   className="flex items-center gap-2 px-4 py-2 bg-white/10 text-white hover:bg-white/20 rounded-md text-sm font-medium transition-colors border border-white/20"
@@ -614,13 +614,13 @@ export default function App() {
           </div>
         </header>
 
-        <main className="max-w-7xl mx-auto p-6 space-y-8 print:p-0">
+        <main className="max-w-7xl mx-auto p-4 md:p-6 space-y-8 print:p-0">
           
           {/* Tabs */}
-          <div className="flex border-b border-slate-200 print:hidden">
+          <div className="flex overflow-x-auto hide-scrollbar border-b border-slate-200 print:hidden whitespace-nowrap">
             <button
               onClick={() => setActiveTab('transport')}
-              className={`px-6 py-3 font-medium text-sm flex items-center gap-2 border-b-2 transition-colors ${
+              className={`px-6 py-3 font-medium text-sm flex items-center gap-2 border-b-2 transition-colors shrink-0 ${
                 activeTab === 'transport'
                   ? 'border-blue-600 text-blue-600'
                   : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
@@ -631,7 +631,7 @@ export default function App() {
             </button>
             <button
               onClick={() => setActiveTab('matches')}
-              className={`px-6 py-3 font-medium text-sm flex items-center gap-2 border-b-2 transition-colors ${
+              className={`px-6 py-3 font-medium text-sm flex items-center gap-2 border-b-2 transition-colors shrink-0 ${
                 activeTab === 'matches'
                   ? 'border-blue-600 text-blue-600'
                   : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
@@ -642,7 +642,7 @@ export default function App() {
             </button>
             <button
               onClick={() => setActiveTab('overview')}
-              className={`px-6 py-3 font-medium text-sm flex items-center gap-2 border-b-2 transition-colors ${
+              className={`px-6 py-3 font-medium text-sm flex items-center gap-2 border-b-2 transition-colors shrink-0 ${
                 activeTab === 'overview'
                   ? 'border-blue-600 text-blue-600'
                   : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
@@ -1329,7 +1329,7 @@ export default function App() {
                   placeholder="เช่น ทีมหญิง สาย B, วิ่ง 100m" 
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">จำนวนนักกีฬา (คน)</label>
                   <input 
@@ -1388,7 +1388,7 @@ export default function App() {
                 <label className="block text-sm font-medium text-slate-700 mb-1">กีฬา / กิจกรรม</label>
                 <input required type="text" value={newTrip.sport} onChange={e => setNewTrip({...newTrip, sport: e.target.value})} className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" placeholder="เช่น ฝึกซ้อมวอลเลย์บอล" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">สถานที่</label>
                   <input required type="text" value={newTrip.venue} onChange={e => setNewTrip({...newTrip, venue: e.target.value})} className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" placeholder="เช่น โรงยิม 2" />
@@ -1398,7 +1398,7 @@ export default function App() {
                   <input required type="number" min="1" value={newTrip.passengers} onChange={e => setNewTrip({...newTrip, passengers: parseInt(e.target.value) || 0})} className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">เวลาล้อหมุน</label>
                   <input required type="time" value={newTrip.departTime} onChange={e => setNewTrip({...newTrip, departTime: e.target.value})} className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
