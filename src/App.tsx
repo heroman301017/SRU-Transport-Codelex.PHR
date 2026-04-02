@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Bus, Car, Calendar, MapPin, Clock, AlertCircle, Users, CheckCircle2, Info, Plus, X, Printer, ChevronDown, FileText, Trophy, Activity, Edit, Share2, Copy, Check } from 'lucide-react';
+import { Bus, Car, Calendar, MapPin, Clock, AlertCircle, Users, CheckCircle2, Info, Plus, X, Printer, ChevronDown, FileText, Trophy, Activity, Edit, Share2, Copy, Check, BarChart2, PieChart as PieChartIcon } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 
 // --- Types ---
 type VehicleType = 'bus' | 'van';
@@ -97,7 +98,7 @@ const INITIAL_MATCHES: MatchItem[] = [
 ];
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'transport' | 'matches'>('transport');
+  const [activeTab, setActiveTab] = useState<'transport' | 'matches' | 'overview'>('transport');
   
   const [schedules, setSchedules] = useState<ScheduleItem[]>(() => {
     const saved = localStorage.getItem('sru-schedules');
@@ -123,6 +124,24 @@ export default function App() {
     localStorage.setItem('sru-matches', JSON.stringify(matches));
   }, [matches]);
 
+  // Overlap Deduplication State
+  const [overlapAthletes, setOverlapAthletes] = useState<number>(() => {
+    const saved = localStorage.getItem('sru-overlap-athletes');
+    return saved ? parseInt(saved, 10) : 0;
+  });
+  const [overlapStaff, setOverlapStaff] = useState<number>(() => {
+    const saved = localStorage.getItem('sru-overlap-staff');
+    return saved ? parseInt(saved, 10) : 0;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('sru-overlap-athletes', overlapAthletes.toString());
+  }, [overlapAthletes]);
+
+  useEffect(() => {
+    localStorage.setItem('sru-overlap-staff', overlapStaff.toString());
+  }, [overlapStaff]);
+
   const [selectedDate, setSelectedDate] = useState<string>(DATES[0]);
   
   // Print State
@@ -134,6 +153,49 @@ export default function App() {
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
   const [adminError, setAdminError] = useState('');
+  const [isEcoMode, setIsEcoMode] = useState(false);
+
+  const recalculateEcoModeForDate = (date: string, currentSchedules: ScheduleItem[]) => {
+    let vanUsageCount = { v1: 0, v2: 0, v3: 0, v4: 0, v5: 0 };
+    return currentSchedules.map(s => {
+      if (s.date !== date) return s;
+      
+      const totalPax = s.passengers + (s.staffCount || 0);
+      let remaining = totalPax;
+      const assigned: string[] = [];
+      
+      if (remaining > 20) {
+        assigned.push('b1');
+        remaining -= 40;
+      }
+      
+      while (remaining > 0) {
+        const bestVan = Object.keys(vanUsageCount).reduce((a, b) => vanUsageCount[a as keyof typeof vanUsageCount] < vanUsageCount[b as keyof typeof vanUsageCount] ? a : b);
+        assigned.push(bestVan);
+        vanUsageCount[bestVan as keyof typeof vanUsageCount]++;
+        remaining -= 10;
+      }
+      
+      return { ...s, assignedVehicles: assigned };
+    });
+  };
+
+  const toggleEcoMode = () => {
+    const newEcoMode = !isEcoMode;
+    if (newEcoMode) {
+      if (window.confirm('เปิดโหมดประหยัดน้ำมัน: ระบบจะจัดรถอัตโนมัติสำหรับวันนี้ ยืนยันหรือไม่?')) {
+        setIsEcoMode(true);
+      }
+    } else {
+      setIsEcoMode(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isEcoMode) {
+      setSchedules(prev => recalculateEcoModeForDate(selectedDate, prev));
+    }
+  }, [selectedDate, isEcoMode]);
 
   const handleResetData = () => {
     if (window.confirm('คุณต้องการรีเซ็ตข้อมูลทั้งหมดกลับเป็นค่าเริ่มต้นหรือไม่? ข้อมูลที่แก้ไขไว้จะหายไปทั้งหมด')) {
@@ -193,14 +255,20 @@ export default function App() {
       assignedVehicles: [],
       notes: newTrip.notes
     };
-    setSchedules(prev => [...prev, trip]);
+    setSchedules(prev => {
+      const updated = [...prev, trip];
+      return isEcoMode ? recalculateEcoModeForDate(selectedDate, updated) : updated;
+    });
     setShowAddForm(false);
     setNewTrip({ sport: 'ฝึกซ้อม...', venue: '', matchTime: '', departTime: '', passengers: 10, notes: 'สแตนด์บายรอรับกลับ (ไป-กลับ)' });
   };
 
   const handleDeleteTrip = (id: string) => {
     if (window.confirm('ต้องการลบเที่ยววิ่งนี้ใช่หรือไม่?')) {
-      setSchedules(prev => prev.filter(s => s.id !== id));
+      setSchedules(prev => {
+        const updated = prev.filter(s => s.id !== id);
+        return isEcoMode ? recalculateEcoModeForDate(selectedDate, updated) : updated;
+      });
     }
   };
 
@@ -261,6 +329,10 @@ export default function App() {
 
   // Handle vehicle assignment toggle
   const toggleVehicle = (scheduleId: string, vehicleId: string) => {
+    if (isEcoMode) {
+      alert('ไม่สามารถเลือกคันรถเองได้ในโหมดประหยัดน้ำมัน (Auto-Assign)');
+      return;
+    }
     setSchedules(prev => prev.map(s => {
       if (s.id !== scheduleId) return s;
       
@@ -279,16 +351,26 @@ export default function App() {
 
   // Handle passenger count change
   const updatePassengers = (scheduleId: string, count: number) => {
-    setSchedules(prev => prev.map(s => 
-      s.id === scheduleId ? { ...s, passengers: count } : s
-    ));
+    setSchedules(prev => {
+      const updated = prev.map(s => s.id === scheduleId ? { ...s, passengers: count } : s);
+      if (isEcoMode) {
+        const schedule = updated.find(s => s.id === scheduleId);
+        if (schedule) return recalculateEcoModeForDate(schedule.date, updated);
+      }
+      return updated;
+    });
   };
 
   // Handle staff count change
   const updateStaffCount = (scheduleId: string, count: number) => {
-    setSchedules(prev => prev.map(s => 
-      s.id === scheduleId ? { ...s, staffCount: count } : s
-    ));
+    setSchedules(prev => {
+      const updated = prev.map(s => s.id === scheduleId ? { ...s, staffCount: count } : s);
+      if (isEcoMode) {
+        const schedule = updated.find(s => s.id === scheduleId);
+        if (schedule) return recalculateEcoModeForDate(schedule.date, updated);
+      }
+      return updated;
+    });
   };
 
   // Handle Print
@@ -316,6 +398,95 @@ export default function App() {
   const totalVanTripsMax = 5 * 3; // 5 vans * 3 trips
   const tripsRemaining = totalVanTripsMax - totalVanTripsUsed;
   const vanSeatsRemaining = tripsRemaining * 10; // 10 seats per van trip
+
+  // --- Overview Data Calculations ---
+  const overviewStats = useMemo(() => {
+    let totalTrips = 0;
+    let totalMatches = matches.length;
+
+    // 1. Calculate Unique Athletes & Staff across the whole event
+    const sportAthleteMap: Record<string, number> = {};
+    const sportStaffMap: Record<string, number> = {};
+
+    // Get athletes from matches (most accurate for official sports)
+    matches.forEach(m => {
+      sportAthleteMap[m.sport] = Math.max(sportAthleteMap[m.sport] || 0, m.athletesCount);
+    });
+
+    // Get athletes and staff from schedules (to catch practices or missing sports)
+    schedules.forEach(s => {
+      // Skip combined events to avoid double counting
+      if (s.sport.includes('งานเลี้ยง') || s.sport.includes('พิธี')) return;
+      
+      let baseSport = s.sport;
+      if (baseSport.startsWith('ฝึกซ้อม')) baseSport = baseSport.replace('ฝึกซ้อม', '').trim();
+      
+      sportAthleteMap[baseSport] = Math.max(sportAthleteMap[baseSport] || 0, s.passengers);
+      sportStaffMap[baseSport] = Math.max(sportStaffMap[baseSport] || 0, s.staffCount || 0);
+    });
+
+    const uniqueAthletes = Math.max(0, Object.values(sportAthleteMap).reduce((a, b) => a + b, 0) - overlapAthletes);
+    const uniqueStaff = Math.max(0, Object.values(sportStaffMap).reduce((a, b) => a + b, 0) - overlapStaff);
+
+    // 2. Calculate Daily Data (Unique travelers per day)
+    const dailyData = DATES.map(date => {
+      const daySchedules = schedules.filter(s => s.date === date);
+      const dayMatches = matches.filter(m => m.date === date);
+      
+      const dayAthleteMap: Record<string, number> = {};
+      const dayStaffMap: Record<string, number> = {};
+      
+      daySchedules.forEach(s => {
+        if (s.sport.includes('งานเลี้ยง') || s.sport.includes('พิธี')) return;
+        let baseSport = s.sport;
+        if (baseSport.startsWith('ฝึกซ้อม')) baseSport = baseSport.replace('ฝึกซ้อม', '').trim();
+        
+        dayAthleteMap[baseSport] = Math.max(dayAthleteMap[baseSport] || 0, s.passengers);
+        dayStaffMap[baseSport] = Math.max(dayStaffMap[baseSport] || 0, s.staffCount || 0);
+      });
+      
+      const athletes = Object.values(dayAthleteMap).reduce((a, b) => a + b, 0);
+      const staff = Object.values(dayStaffMap).reduce((a, b) => a + b, 0);
+      const trips = daySchedules.reduce((sum, s) => sum + s.assignedVehicles.length, 0);
+
+      totalTrips += trips;
+
+      return {
+        date: new Date(date).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }),
+        athletes,
+        staff,
+        totalPassengers: athletes + staff,
+        trips,
+        matches: dayMatches.length
+      };
+    });
+
+    // 3. Calculate Sport Breakdown for Pie Chart (Unique headcount per sport)
+    const sportDataMap: Record<string, { name: string, passengers: number }> = {};
+    
+    Object.keys(sportAthleteMap).forEach(sport => {
+      if (!sportDataMap[sport]) sportDataMap[sport] = { name: sport, passengers: 0 };
+      sportDataMap[sport].passengers += sportAthleteMap[sport];
+    });
+
+    Object.keys(sportStaffMap).forEach(sport => {
+      if (!sportDataMap[sport]) sportDataMap[sport] = { name: sport, passengers: 0 };
+      sportDataMap[sport].passengers += sportStaffMap[sport];
+    });
+
+    const sportData = Object.values(sportDataMap).sort((a, b) => b.passengers - a.passengers);
+
+    return {
+      totalAthletes: uniqueAthletes,
+      totalStaff: uniqueStaff,
+      totalTrips,
+      totalMatches,
+      dailyData,
+      sportData
+    };
+  }, [schedules, matches]);
+
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658'];
 
   const formattedDate = new Date(selectedDate).toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' });
 
@@ -364,6 +535,17 @@ export default function App() {
                 </button>
                 {isAdmin ? (
                   <>
+                    <button
+                      onClick={toggleEcoMode}
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors border ${
+                        isEcoMode 
+                          ? 'bg-emerald-500/20 text-emerald-100 border-emerald-500/50 hover:bg-emerald-500/30' 
+                          : 'bg-slate-700/50 text-slate-300 border-slate-600 hover:bg-slate-700'
+                      }`}
+                      title="โหมดจัดรถประหยัดน้ำมัน (Auto-Assign)"
+                    >
+                      {isEcoMode ? 'Eco Mode: ON' : 'Eco Mode: OFF'}
+                    </button>
                     <button 
                       onClick={handleResetData}
                       className="px-4 py-2 bg-orange-500/20 text-orange-100 hover:bg-orange-500/40 rounded-md text-sm font-medium transition-colors"
@@ -447,6 +629,17 @@ export default function App() {
             >
               <Trophy className="w-4 h-4" />
               ข้อมูลการแข่งขัน
+            </button>
+            <button
+              onClick={() => setActiveTab('overview')}
+              className={`px-6 py-3 font-medium text-sm flex items-center gap-2 border-b-2 transition-colors ${
+                activeTab === 'overview'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+              }`}
+            >
+              <Activity className="w-4 h-4" />
+              สรุปภาพรวม
             </button>
           </div>
 
@@ -627,23 +820,24 @@ export default function App() {
                                   const isAssigned = schedule.assignedVehicles.includes(v.id);
                                   const used = vehicleUsage[v.id] || 0;
                                   const isFull = used >= v.maxTrips && !isAssigned;
+                                  const isDisabled = isFull || isEcoMode;
                                   
                                   return (
                                     <button
                                       key={v.id}
-                                      disabled={isFull}
+                                      disabled={isDisabled}
                                       onClick={() => toggleVehicle(schedule.id, v.id)}
                                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
                                         isAssigned 
                                           ? 'bg-blue-600 text-white border-blue-600 shadow-sm' 
-                                          : isFull
+                                          : isDisabled
                                             ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
                                             : 'bg-white text-slate-600 border-slate-300 hover:border-blue-400 hover:bg-blue-50'
-                                      }`}
+                                      } ${isEcoMode ? 'opacity-70' : ''}`}
                                     >
                                       {v.type === 'bus' ? <Bus className="w-3.5 h-3.5" /> : <Car className="w-3.5 h-3.5" />}
                                       {v.name} ({v.capacity} ที่)
-                                      {isAssigned && <X className="w-3 h-3 ml-0.5" />}
+                                      {isAssigned && !isEcoMode && <X className="w-3 h-3 ml-0.5" />}
                                     </button>
                                   );
                                 })}
@@ -858,6 +1052,150 @@ export default function App() {
                       )}
                     </tbody>
                   </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'overview' && (
+            <div className="space-y-8 print:hidden">
+              
+              {isAdmin && (
+                <div className="bg-blue-50 rounded-xl p-4 border border-blue-100 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-blue-800 flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4" />
+                      ปรับแก้ตัวเลขซ้ำซ้อน (Deduplication)
+                    </h3>
+                    <p className="text-xs text-blue-600 mt-1">
+                      กรณีมีนักกีฬาหรือเจ้าหน้าที่ดูแลหลายชนิดกีฬา สามารถใส่จำนวนคนที่ซ้ำซ้อนเพื่อหักลบออกจากยอดรวมได้
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm text-blue-700 font-medium">นักกีฬาเล่นซ้ำ:</label>
+                      <input 
+                        type="number" 
+                        min="0" 
+                        value={overlapAthletes} 
+                        onChange={e => setOverlapAthletes(parseInt(e.target.value) || 0)} 
+                        className="w-20 p-1.5 rounded border border-blue-200 text-sm text-center focus:ring-2 focus:ring-blue-500 outline-none" 
+                      />
+                      <span className="text-sm text-blue-700">คน</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm text-blue-700 font-medium">จนท.ดูแลซ้ำ:</label>
+                      <input 
+                        type="number" 
+                        min="0" 
+                        value={overlapStaff} 
+                        onChange={e => setOverlapStaff(parseInt(e.target.value) || 0)} 
+                        className="w-20 p-1.5 rounded border border-blue-200 text-sm text-center focus:ring-2 focus:ring-blue-500 outline-none" 
+                      />
+                      <span className="text-sm text-blue-700">คน</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col items-center justify-center text-center">
+                  <div className="p-3 bg-blue-100 text-blue-600 rounded-full mb-3">
+                    <Users className="w-6 h-6" />
+                  </div>
+                  <p className="text-sm text-slate-500 font-medium">นักกีฬาทั้งหมด</p>
+                  <p className="text-3xl font-bold text-slate-800">{overviewStats.totalAthletes}</p>
+                  {overlapAthletes > 0 ? (
+                    <p className="text-[10px] text-emerald-600 mt-1">*หักลบคนซ้ำซ้อนแล้ว</p>
+                  ) : (
+                    <p className="text-[10px] text-slate-400 mt-1">*อาจมีผู้เล่นซ้ำซ้อนหลายกีฬา</p>
+                  )}
+                </div>
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col items-center justify-center text-center">
+                  <div className="p-3 bg-indigo-100 text-indigo-600 rounded-full mb-3">
+                    <Users className="w-6 h-6" />
+                  </div>
+                  <p className="text-sm text-slate-500 font-medium">เจ้าหน้าที่ทั้งหมด</p>
+                  <p className="text-3xl font-bold text-slate-800">{overviewStats.totalStaff}</p>
+                  {overlapStaff > 0 ? (
+                    <p className="text-[10px] text-emerald-600 mt-1">*หักลบคนซ้ำซ้อนแล้ว</p>
+                  ) : (
+                    <p className="text-[10px] text-slate-400 mt-1">*อาจมี จนท. ดูแลหลายกีฬา</p>
+                  )}
+                </div>
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col items-center justify-center text-center">
+                  <div className="p-3 bg-emerald-100 text-emerald-600 rounded-full mb-3">
+                    <Bus className="w-6 h-6" />
+                  </div>
+                  <p className="text-sm text-slate-500 font-medium">เที่ยวรถทั้งหมด</p>
+                  <p className="text-3xl font-bold text-slate-800">{overviewStats.totalTrips}</p>
+                </div>
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col items-center justify-center text-center">
+                  <div className="p-3 bg-amber-100 text-amber-600 rounded-full mb-3">
+                    <Trophy className="w-6 h-6" />
+                  </div>
+                  <p className="text-sm text-slate-500 font-medium">รายการแข่งทั้งหมด</p>
+                  <p className="text-3xl font-bold text-slate-800">{overviewStats.totalMatches}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Daily Trend Chart */}
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                  <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                    <BarChart2 className="w-5 h-5 text-blue-600" />
+                    จำนวนผู้เดินทางรายวัน
+                  </h3>
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={overviewStats.dailyData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                        <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} dy={10} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
+                        <Tooltip 
+                          cursor={{ fill: '#f1f5f9' }}
+                          contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                        />
+                        <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                        <Bar dataKey="athletes" name="นักกีฬา" stackId="a" fill="#3b82f6" radius={[0, 0, 4, 4]} />
+                        <Bar dataKey="staff" name="เจ้าหน้าที่" stackId="a" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Sport Breakdown Chart */}
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                  <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                    <PieChartIcon className="w-5 h-5 text-indigo-600" />
+                    สัดส่วนผู้เดินทางตามชนิดกีฬา
+                  </h3>
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={overviewStats.sportData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={80}
+                          outerRadius={120}
+                          paddingAngle={2}
+                          dataKey="passengers"
+                          nameKey="name"
+                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                          labelLine={false}
+                        >
+                          {overviewStats.sportData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip 
+                          formatter={(value) => [`${value} คน`, 'จำนวนรวม']}
+                          contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
               </div>
             </div>
