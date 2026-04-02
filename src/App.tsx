@@ -14,6 +14,8 @@ interface Vehicle {
   maxTrips: number;
 }
 
+type TripType = 'round-trip' | 'drop-off' | 'pick-up';
+
 interface ScheduleItem {
   id: string;
   date: string;
@@ -25,6 +27,7 @@ interface ScheduleItem {
   staffCount?: number;
   assignedVehicles: string[];
   notes: string;
+  tripType?: TripType;
 }
 
 interface MatchItem {
@@ -256,13 +259,22 @@ export default function App() {
 
   // Add Trip State
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newTrip, setNewTrip] = useState({
+  const [newTrip, setNewTrip] = useState<{
+    sport: string;
+    venue: string;
+    matchTime: string;
+    departTime: string;
+    passengers: number;
+    notes: string;
+    tripType: TripType;
+  }>({
     sport: 'ฝึกซ้อม...',
     venue: '',
     matchTime: '',
     departTime: '',
     passengers: 10,
-    notes: 'สแตนด์บายรอรับกลับ (ไป-กลับ)'
+    notes: '',
+    tripType: 'round-trip'
   });
 
   const handleAddTrip = (e: React.FormEvent) => {
@@ -277,14 +289,15 @@ export default function App() {
       passengers: newTrip.passengers,
       staffCount: 3,
       assignedVehicles: [],
-      notes: newTrip.notes
+      notes: newTrip.notes,
+      tripType: newTrip.tripType
     };
     setSchedules(prev => {
       const updated = [...prev, trip];
       return isEcoMode ? recalculateEcoModeForDate(selectedDate, updated) : updated;
     });
     setShowAddForm(false);
-    setNewTrip({ sport: 'ฝึกซ้อม...', venue: '', matchTime: '', departTime: '', passengers: 10, notes: 'สแตนด์บายรอรับกลับ (ไป-กลับ)' });
+    setNewTrip({ sport: 'ฝึกซ้อม...', venue: '', matchTime: '', departTime: '', passengers: 10, notes: '', tripType: 'round-trip' });
   };
 
   const handleDeleteTrip = (id: string) => {
@@ -783,7 +796,18 @@ export default function App() {
                           </td>
                           <td className="p-4 align-top print:border-r print:border-slate-800">
                             <p className="font-medium text-slate-800">{schedule.sport}</p>
-                            <p className="text-xs text-slate-500 mt-1 print:text-slate-600">{schedule.venue}</p>
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                              <p className="text-xs text-slate-500 print:text-slate-600">{schedule.venue}</p>
+                              {(!schedule.tripType || schedule.tripType === 'round-trip') && (
+                                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] rounded-full print:border print:border-blue-300">ไป-กลับ (รอรับ)</span>
+                              )}
+                              {schedule.tripType === 'drop-off' && (
+                                <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-[10px] rounded-full print:border print:border-orange-300">ไปส่งอย่างเดียว</span>
+                              )}
+                              {schedule.tripType === 'pick-up' && (
+                                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] rounded-full print:border print:border-emerald-300">ไปรับกลับ</span>
+                              )}
+                            </div>
                             {schedule.notes && <p className="text-xs text-blue-500 mt-1 bg-blue-50 inline-block px-2 py-0.5 rounded print:bg-transparent print:p-0 print:text-slate-600">หมายเหตุ: {schedule.notes}</p>}
                           </td>
                           <td className="p-4 align-top print:border-r print:border-slate-800">
@@ -1423,6 +1447,23 @@ export default function App() {
                 </div>
               </div>
               <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">รูปแบบการวิ่ง</label>
+                <div className="flex flex-wrap gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="tripType" value="round-trip" checked={newTrip.tripType === 'round-trip'} onChange={() => setNewTrip({...newTrip, tripType: 'round-trip'})} className="w-4 h-4 text-blue-600 focus:ring-blue-500" />
+                    <span className="text-sm text-slate-700">ไป-กลับ (รอรับ)</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="tripType" value="drop-off" checked={newTrip.tripType === 'drop-off'} onChange={() => setNewTrip({...newTrip, tripType: 'drop-off'})} className="w-4 h-4 text-blue-600 focus:ring-blue-500" />
+                    <span className="text-sm text-slate-700">ไปส่งอย่างเดียว</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="tripType" value="pick-up" checked={newTrip.tripType === 'pick-up'} onChange={() => setNewTrip({...newTrip, tripType: 'pick-up'})} className="w-4 h-4 text-blue-600 focus:ring-blue-500" />
+                    <span className="text-sm text-slate-700">ไปรับกลับ</span>
+                  </label>
+                </div>
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">หมายเหตุ</label>
                 <input type="text" value={newTrip.notes} onChange={e => setNewTrip({...newTrip, notes: e.target.value})} className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
               </div>
@@ -1479,6 +1520,9 @@ export default function App() {
                         <td className="p-3 border-r border-slate-300">
                           {schedule.sport}
                           <div className="text-xs text-slate-500 mt-1">แข่ง: {schedule.matchTime}</div>
+                          <div className="text-xs font-bold mt-1 text-blue-700">
+                            {(!schedule.tripType || schedule.tripType === 'round-trip') ? '[ไป-กลับ (รอรับ)]' : schedule.tripType === 'drop-off' ? '[ไปส่งอย่างเดียว]' : '[ไปรับกลับ]'}
+                          </div>
                         </td>
                         <td className="p-3 border-r border-slate-300">{schedule.venue}</td>
                         <td className="p-3 border-r border-slate-300 text-center">{schedule.passengers}</td>
