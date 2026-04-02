@@ -97,8 +97,31 @@ const INITIAL_MATCHES: MatchItem[] = [
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'transport' | 'matches'>('transport');
-  const [schedules, setSchedules] = useState<ScheduleItem[]>(INITIAL_SCHEDULE);
-  const [matches, setMatches] = useState<MatchItem[]>(INITIAL_MATCHES);
+  
+  const [schedules, setSchedules] = useState<ScheduleItem[]>(() => {
+    const saved = localStorage.getItem('sru-schedules');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { console.error(e); }
+    }
+    return INITIAL_SCHEDULE;
+  });
+
+  const [matches, setMatches] = useState<MatchItem[]>(() => {
+    const saved = localStorage.getItem('sru-matches');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { console.error(e); }
+    }
+    return INITIAL_MATCHES;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('sru-schedules', JSON.stringify(schedules));
+  }, [schedules]);
+
+  useEffect(() => {
+    localStorage.setItem('sru-matches', JSON.stringify(matches));
+  }, [matches]);
+
   const [selectedDate, setSelectedDate] = useState<string>(DATES[0]);
   
   // Print State
