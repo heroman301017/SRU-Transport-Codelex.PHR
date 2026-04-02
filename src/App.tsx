@@ -166,7 +166,7 @@ export default function App() {
   const [isEcoMode, setIsEcoMode] = useState(false);
 
   const recalculateEcoModeForDate = (date: string, currentSchedules: ScheduleItem[]) => {
-    let vanUsageCount = { v1: 0, v2: 0, v3: 0, v4: 0, v5: 0 };
+    let vanUsageCount = { van1: 0, van2: 0, van3: 0, van4: 0, van5: 0 };
     return currentSchedules.map(s => {
       if (s.date !== date) return s;
       
@@ -175,12 +175,26 @@ export default function App() {
       const assigned: string[] = [];
       
       if (remaining > 20) {
-        assigned.push('b1');
-        remaining -= 40;
+        assigned.push('bus1');
+        remaining -= 50;
       }
       
       while (remaining > 0) {
-        const bestVan = Object.keys(vanUsageCount).reduce((a, b) => vanUsageCount[a as keyof typeof vanUsageCount] < vanUsageCount[b as keyof typeof vanUsageCount] ? a : b);
+        const primaryVans = ['van1', 'van2', 'van3'];
+        const secondaryVans = ['van4', 'van5'];
+        
+        let bestPrimary = primaryVans.reduce((a, b) => 
+          vanUsageCount[a as keyof typeof vanUsageCount] < vanUsageCount[b as keyof typeof vanUsageCount] ? a : b
+        );
+        
+        let bestVan = bestPrimary;
+        
+        if (vanUsageCount[bestPrimary as keyof typeof vanUsageCount] >= 3) {
+          bestVan = secondaryVans.reduce((a, b) => 
+            vanUsageCount[a as keyof typeof vanUsageCount] < vanUsageCount[b as keyof typeof vanUsageCount] ? a : b
+          );
+        }
+        
         assigned.push(bestVan);
         vanUsageCount[bestVan as keyof typeof vanUsageCount]++;
         remaining -= 10;
