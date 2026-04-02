@@ -1,0 +1,24 @@
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Sarabun", ui-sans-serif, system-ui, sans-serif;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 1.5cm;
+  }
+  
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    font-family: 'Sarabun', sans-serif;
+  }
+
+  /* Ensure page breaks don't cut content awkwardly */
+  .break-inside-avoid {
+    break-inside: avoid;
+  }
+}
